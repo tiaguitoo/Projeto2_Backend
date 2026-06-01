@@ -1,4 +1,21 @@
 const { User, Tweet, Like, Follow } = require("../models");
+const fs = require("fs");
+const path = require("path");
+
+function deleteUploadedFile(attachmentUrl) {
+  if (attachmentUrl && attachmentUrl.includes("/uploads/")) {
+    const parts = attachmentUrl.split("/uploads/");
+    const filename = decodeURIComponent(parts[parts.length - 1]);
+    const filepath = path.join(__dirname, "../uploads", filename);
+    try {
+      if (fs.existsSync(filepath)) {
+        fs.unlinkSync(filepath);
+      }
+    } catch (err) {
+      console.error("Error deleting file:", err);
+    }
+  }
+}
 
 // 1. List all users (Backoffice)
 async function listUsers(req, res) {
@@ -177,6 +194,8 @@ async function deleteTweet(req, res) {
       return res.status(404).json({ error: "Tweet not found." });
     }
 
+    deleteUploadedFile(tweet.attachment_url);
+
     await tweet.destroy();
     return res.status(200).json({ message: "Tweet deleted successfully." });
   } catch (error) {
@@ -193,6 +212,8 @@ async function deleteTweetImage(req, res) {
     if (!tweet) {
       return res.status(404).json({ error: "Tweet not found." });
     }
+
+    deleteUploadedFile(tweet.attachment_url);
 
     tweet.attachment_url = null;
     await tweet.save();

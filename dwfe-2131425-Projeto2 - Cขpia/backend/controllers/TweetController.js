@@ -1,4 +1,21 @@
 const { Tweet, User, Like, Follow } = require("../models");
+const fs = require("fs");
+const path = require("path");
+
+function deleteUploadedFile(attachmentUrl) {
+  if (attachmentUrl && attachmentUrl.includes("/uploads/")) {
+    const parts = attachmentUrl.split("/uploads/");
+    const filename = decodeURIComponent(parts[parts.length - 1]);
+    const filepath = path.join(__dirname, "../uploads", filename);
+    try {
+      if (fs.existsSync(filepath)) {
+        fs.unlinkSync(filepath);
+      }
+    } catch (err) {
+      console.error("Error deleting file:", err);
+    }
+  }
+}
 
 // 1. Create a Tweet or Reply
 async function createTweet(req, res) {
@@ -22,10 +39,16 @@ async function createTweet(req, res) {
       }
     }
 
+    let finalAttachmentUrl = attachment_url || null;
+
+    if (req.file) {
+      finalAttachmentUrl = `${req.protocol}://${req.get("host")}/uploads/${encodeURIComponent(req.file.filename)}`;
+    }
+
     const tweet = await Tweet.create({
       user_id,
       content,
-      attachment_url: attachment_url || null,
+      attachment_url: finalAttachmentUrl,
       reply_to_tweet_id: reply_to_tweet_id || null
     });
 
@@ -245,6 +268,8 @@ async function deleteTweet(req, res) {
     if (tweet.user_id !== user_id && role !== "admin") {
       return res.status(403).json({ error: "Access denied. You do not have permission to delete this tweet." });
     }
+
+    deleteUploadedFile(tweet.attachment_url);
 
     await tweet.destroy();
     return res.status(200).json({ message: "Tweet deleted successfully." });

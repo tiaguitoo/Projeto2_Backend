@@ -19,6 +19,9 @@ app.use(cookieParser());
 // API Routes
 app.use("/api", apiRouter);
 
+// Serve uploaded files statically
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+
 // Serve Frontend static files in production
 app.use(express.static(path.join(__dirname, "../frontend/dist")));
 

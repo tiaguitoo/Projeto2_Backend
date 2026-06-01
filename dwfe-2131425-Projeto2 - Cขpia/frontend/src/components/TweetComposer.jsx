@@ -9,7 +9,8 @@ export default function TweetComposer({
 }) {
   const { user, fetchWithAuth } = useAuth();
   const [content, setContent] = useState("");
-  const [attachment, setAttachment] = useState(null); // Base64 string
+  const [attachment, setAttachment] = useState(null); // Base64 string for preview
+  const [fileObject, setFileObject] = useState(null); // The actual File to upload
   const [isSubmitting, setIsSubmitting] = useState(false);
   const fileInputRef = useRef(null);
 
@@ -26,9 +27,11 @@ export default function TweetComposer({
         return;
       }
 
+      setFileObject(file);
+
       const reader = new FileReader();
       reader.onloadend = () => {
-        setAttachment(reader.result); // base64 string
+        setAttachment(reader.result); // base64 string for preview
       };
       reader.readAsDataURL(file);
     }
@@ -36,6 +39,7 @@ export default function TweetComposer({
 
   const removeAttachment = () => {
     setAttachment(null);
+    setFileObject(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
@@ -49,19 +53,33 @@ export default function TweetComposer({
 
     setIsSubmitting(true);
     try {
-      const res = await fetchWithAuth("/tweets", {
-        method: "POST",
-        body: {
+      let body;
+      if (fileObject) {
+        const formData = new FormData();
+        formData.append("content", content);
+        if (replyToTweetId) {
+          formData.append("reply_to_tweet_id", replyToTweetId);
+        }
+        formData.append("image", fileObject);
+        body = formData;
+      } else {
+        body = {
           content,
           reply_to_tweet_id: replyToTweetId,
-          attachment_url: attachment // Seta o base64 para a base de dados
-        }
+          attachment_url: null
+        };
+      }
+
+      const res = await fetchWithAuth("/tweets", {
+        method: "POST",
+        body
       });
 
       if (res.ok) {
         const newTweet = await res.json();
         setContent("");
         setAttachment(null);
+        setFileObject(null);
         if (fileInputRef.current) {
           fileInputRef.current.value = "";
         }

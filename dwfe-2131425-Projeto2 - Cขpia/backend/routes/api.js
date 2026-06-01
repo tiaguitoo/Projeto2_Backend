@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 
 const { verifyToken, verifyAdmin } = require("../middlewares/authMiddleware");
+const upload = require("../middlewares/uploadMiddleware");
 
 const AuthController = require("../controllers/AuthController");
 const TweetController = require("../controllers/TweetController");
@@ -15,7 +16,14 @@ router.post("/auth/login", AuthController.login);
 // --- PROTECTED ROUTES (Logged users) ---
 
 // Tweet Operations
-router.post("/tweets", verifyToken, TweetController.createTweet);
+router.post("/tweets", verifyToken, (req, res, next) => {
+  upload.single("image")(req, res, (err) => {
+    if (err) {
+      return res.status(400).json({ error: err.message });
+    }
+    next();
+  });
+}, TweetController.createTweet);
 router.get("/tweets", verifyToken, TweetController.getFeed);
 router.get("/tweets/:tweet_id", verifyToken, TweetController.getTweetDetails);
 router.delete("/tweets/:tweet_id", verifyToken, TweetController.deleteTweet);

@@ -4,7 +4,7 @@ require("dotenv").config();
 let sequelizeInstance = new Sequelize(
   process.env.DB_SCHEMA || "clonetwitter",
   process.env.DB_USER || "root",
-  process.env.DB_PASS || "password",
+  process.env.DB_PASS || "dyinglight2",
   {
     host: process.env.DB_HOST || "localhost",
     dialect: "mysql",
@@ -25,7 +25,7 @@ function switchToSQLite() {
   console.log("⚠️ MySQL connection failed or not available. Falling back to local SQLite database...");
   sequelizeInstance = new Sequelize({
     dialect: "sqlite",
-    storage: "./clonetwitter.sqlite",
+    storage: process.env.SQLITE_STORAGE || "./clonetwitter.sqlite",
     logging: false
   });
   isUsingSQLite = true;
